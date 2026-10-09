@@ -1,30 +1,36 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
 from pathlib import Path
 
+from predict import load_model, predict_price
 
-# Load trained model
+
+st.set_page_config(
+    page_title="House Price Predictor",
+    page_icon="🏠",
+    layout="centered"
+)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-MODEL_PATH = BASE_DIR / "model" / "house_price_model.pkl"
 DATA_PATH = BASE_DIR / "data" / "train.csv"
 
+
 @st.cache_resource
-def load_model():
-    return joblib.load(MODEL_PATH)
+def get_model():
+    """Load and cache the trained ML model."""
+    return load_model()
 
 
 @st.cache_data
 def load_training_data():
+    """Load and cache the training dataset."""
     return pd.read_csv(DATA_PATH)
 
 
-model = load_model()
+model = get_model()
 training_data = load_training_data()
-
-#adding defalualt values for the input fields
 
 X_reference = training_data.drop(
     columns=["SalePrice", "Id"]
@@ -32,60 +38,54 @@ X_reference = training_data.drop(
 
 default_values = X_reference.iloc[[0]].copy()
 
+
 for column in X_reference.columns:
 
     if pd.api.types.is_numeric_dtype(X_reference[column]):
-
         default_values[column] = X_reference[column].median()
 
     else:
-
         default_values[column] = X_reference[column].mode()[0]
 
-# Page configuration
 
-st.set_page_config(
-    page_title="House Price Predictor",
-    page_icon="🏠",
-    layout="centered"
+st.markdown(
+    """
+    <style>
+
+    .main {
+        padding-top: 2rem;
+    }
+
+    h1 {
+        font-size: 3rem;
+    }
+
+    .prediction-box {
+        padding: 25px;
+        border-radius: 15px;
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .prediction-price {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
 )
-st.markdown("""
-<style>
 
-.main {
-    padding-top: 2rem;
-}
-
-h1 {
-    font-size: 3rem;
-}
-
-.prediction-box {
-    padding: 25px;
-    border-radius: 15px;
-    text-align: center;
-    margin-top: 20px;
-}
-
-.prediction-price {
-    font-size: 2.5rem;
-    font-weight: bold;
-}
-
-.small-text {
-    font-size: 0.9rem;
-    color: #666;
-}
-
-</style>
-""", unsafe_allow_html=True)
 with st.sidebar:
 
     st.header("About the Model")
 
     st.write(
-        "This application uses a Gradient Boosting "
-        "regression model trained on the Ames Housing dataset."
+        """
+        This application uses a Gradient Boosting regression
+        model trained on the Ames Housing dataset.
+        """
     )
 
     st.divider()
@@ -107,11 +107,11 @@ with st.sidebar:
 
     st.write(
         """
-        1. User enters house characteristics.
+        1. Enter house characteristics.
         2. Missing features receive typical dataset values.
-        3. Data is preprocessed automatically.
+        3. The saved ML pipeline preprocesses the data.
         4. Gradient Boosting predicts the log house price.
-        5. The prediction is converted back to the original price scale.
+        5. The prediction is converted back to the original price.
         """
     )
 
@@ -122,8 +122,6 @@ with st.sidebar:
     )
 
 
-# User inputs
- 
 st.title("🏠 House Price Predictor")
 
 st.markdown(
@@ -131,13 +129,20 @@ st.markdown(
 )
 
 st.write(
-    "Enter the characteristics below and let the trained "
-    "Gradient Boosting model generate an estimated sale price."
+    """
+    Enter the characteristics of a house below and let the
+    trained Gradient Boosting model generate an estimated
+    sale price.
+    """
 )
+
+st.header("🏠 House Information")
+st.subheader("Basic Information")
 
 col1, col2 = st.columns(2)
 
 with col1:
+
     overall_qual = st.slider(
         "Overall Quality",
         min_value=1,
@@ -162,7 +167,9 @@ with col1:
         step=1
     )
 
+
 with col2:
+
     gr_liv_area = st.number_input(
         "Above Ground Living Area (sq ft)",
         min_value=300,
@@ -187,12 +194,12 @@ with col2:
         step=1
     )
 
-
 st.subheader("Basement")
 
 col1, col2 = st.columns(2)
 
 with col1:
+
     total_bsmt_sf = st.number_input(
         "Basement Area (sq ft)",
         min_value=0,
@@ -201,19 +208,21 @@ with col1:
         step=50
     )
 
+
 with col2:
+
     bsmt_qual = st.selectbox(
         "Basement Quality",
         ["None", "Po", "Fa", "TA", "Gd", "Ex"],
         index=4
     )
 
-
 st.subheader("Garage")
 
 col1, col2 = st.columns(2)
 
 with col1:
+
     garage_cars = st.number_input(
         "Garage Capacity (cars)",
         min_value=0,
@@ -222,7 +231,9 @@ with col1:
         step=1
     )
 
+
 with col2:
+
     garage_area = st.number_input(
         "Garage Area (sq ft)",
         min_value=0,
@@ -237,45 +248,62 @@ st.subheader("House Quality")
 col1, col2 = st.columns(2)
 
 with col1:
+
     kitchen_qual = st.selectbox(
         "Kitchen Quality",
         ["Po", "Fa", "TA", "Gd", "Ex"],
         index=2
     )
 
+
 with col2:
+
     garage_finish = st.selectbox(
         "Garage Finish",
         ["None", "Unf", "RFn", "Fin"],
         index=2
     )
 
-
 st.subheader("Other Features")
 
 col1, col2 = st.columns(2)
 
 with col1:
+
     central_air = st.selectbox(
         "Central Air Conditioning",
         ["Y", "N"]
     )
 
+
 with col2:
+
     neighborhood = st.selectbox(
         "Neighborhood",
-        sorted(X_reference["Neighborhood"].dropna().unique())
+        sorted(
+            X_reference["Neighborhood"]
+            .dropna()
+            .unique()
+        )
     )
 
 
+# ============================================================
+# PREDICTION
+# ============================================================
 
-# Prediction
+if st.button(
+    "🏠 Predict House Price",
+    use_container_width=True
+):
 
-if st.button("🏠 Predict House Price", use_container_width=True):
-
+    # Start with a complete row containing default values.
     input_data = default_values.copy()
 
-    # Numerical inputs
+    # --------------------------------------------------------
+    # Numerical features
+    # --------------------------------------------------------
+
     input_data["OverallQual"] = overall_qual
     input_data["GrLivArea"] = gr_liv_area
     input_data["YearBuilt"] = year_built
@@ -286,43 +314,73 @@ if st.button("🏠 Predict House Price", use_container_width=True):
     input_data["GarageCars"] = garage_cars
     input_data["GarageArea"] = garage_area
 
-    # Categorical inputs
     input_data["BsmtQual"] = (
-        np.nan if bsmt_qual == "None" else bsmt_qual
+        np.nan
+        if bsmt_qual == "None"
+        else bsmt_qual
     )
 
     input_data["KitchenQual"] = kitchen_qual
 
     input_data["GarageFinish"] = (
-        np.nan if garage_finish == "None" else garage_finish
+        np.nan
+        if garage_finish == "None"
+        else garage_finish
     )
 
     input_data["CentralAir"] = central_air
 
     input_data["Neighborhood"] = neighborhood
 
-    # Make prediction
-    prediction_log = model.predict(input_data)
-
-    prediction = np.expm1(prediction_log[0])
+    
+    prediction = predict_price(
+        model,
+        input_data
+    )
 
     st.divider()
 
     st.subheader("Estimated House Price")
 
     st.markdown(
-        f"""
-        <div class="prediction-box">
-            <div class="prediction-price">${prediction:,.0f}</div>
-            <div class="small-text">Prediction generated by the trained Gradient Boosting model.</div>
+    f"""
+    <div style="
+        padding: 28px;
+        border-radius: 16px;
+        text-align: center;
+        border: 1px solid rgba(128,128,128,0.35);
+        margin-top: 20px;
+    ">
+        <div style="font-size: 1.1rem;">
+            Estimated Sale Price
         </div>
-        """,
-        unsafe_allow_html=True
+        <div style="
+            font-size: 2.6rem;
+            font-weight: 700;
+            margin-top: 10px;
+        ">
+            ${prediction:,.0f}
+        </div>
+        <div style="
+            font-size: 0.85rem;
+            margin-top: 12px;
+            opacity: 0.75;
+        ">
+            Generated by the trained Gradient Boosting model
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+
+    st.caption(
+        "This is a machine-learning estimate, "
+        "not a professional property valuation."
     )
 
 st.divider()
 
-st.subheader("About this project")
+st.subheader("About this Project")
 
 col1, col2, col3 = st.columns(3)
 
@@ -343,4 +401,3 @@ with col3:
         "Best CV RMSE",
         "0.1302"
     )
-
