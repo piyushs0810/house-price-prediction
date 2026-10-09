@@ -1,5 +1,6 @@
 import joblib
 import numpy as np
+import pandas as pd
 from pathlib import Path
 
 from feature import add_features
@@ -18,13 +19,11 @@ def load_model():
 def predict_price(model, input_data):
     """
     Predict a house price from its original input features.
-
-    The function adds engineered features before prediction.
-    The trained model predicts log-transformed prices, which
-    are converted back to the original price scale.
     """
 
-    engineered_data = add_features(input_data)
+    input_df = pd.DataFrame([input_data])
+    
+    engineered_data = add_features(input_df)
 
     prediction_log = model.predict(engineered_data)
 

@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import json
 from pathlib import Path
 
 from predict import load_model, predict_price
@@ -12,41 +13,22 @@ st.set_page_config(
     layout="centered"
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-DATA_PATH = BASE_DIR / "data" / "train.csv"
-
-
 @st.cache_resource
 def get_model():
     """Load and cache the trained ML model."""
     return load_model()
 
 
-@st.cache_data
-def load_training_data():
-    """Load and cache the training dataset."""
-    return pd.read_csv(DATA_PATH)
+BASE_DIR = Path(__file__).resolve().parent.parent
+REFERENCE_PATH = BASE_DIR / "src" / "reference_values.json"
 
+with open(REFERENCE_PATH, "r", encoding="utf-8") as file:
+    reference_data = json.load(file)
+
+default_values = reference_data["default_values"]
+dropdown_options = reference_data["dropdown_options"]
 
 model = get_model()
-training_data = load_training_data()
-
-X_reference = training_data.drop(
-    columns=["SalePrice", "Id"]
-)
-
-default_values = X_reference.iloc[[0]].copy()
-
-
-for column in X_reference.columns:
-
-    if pd.api.types.is_numeric_dtype(X_reference[column]):
-        default_values[column] = X_reference[column].median()
-
-    else:
-        default_values[column] = X_reference[column].mode()[0]
-
 
 st.markdown(
     """
@@ -94,7 +76,7 @@ with st.sidebar:
 
     st.metric(
         "5-Fold CV Log RMSE",
-        "0.1302"
+        "0.1278"
     )
 
     st.write(
@@ -278,14 +260,10 @@ with col1:
 
 with col2:
 
-    neighborhood = st.selectbox(
-        "Neighborhood",
-        sorted(
-            X_reference["Neighborhood"]
-            .dropna()
-            .unique()
-        )
-    )
+  neighborhood = st.selectbox(
+    "Neighborhood",
+    dropdown_options["Neighborhood"]
+)
 
 
 # ============================================================
