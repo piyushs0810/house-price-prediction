@@ -1,274 +1,195 @@
-# 🏠 House Price Prediction
+# House Price Prediction
 
-An end-to-end machine learning project that predicts house sale prices using the Ames Housing dataset.
+A machine learning project that predicts residential property prices using housing characteristics. Built with Python, pandas, scikit-learn, and Streamlit, this project demonstrates the end-to-end machine learning workflow, from exploratory data analysis and preprocessing to model evaluation and deployment.
 
-The project covers the complete machine learning workflow:
+## Live Demo
 
-**Data Analysis → Preprocessing → Model Training → Cross-Validation → Model Comparison → Model Saving → Streamlit Deployment**
+**Web App:** https://house-price-prediction-ixrynqyx5fdf6eu9hvrryx.streamlit.app/
 
----
+**GitHub Repository:** https://github.com/piyushs0810/house-price-prediction
 
-## 🎯 Project Objective
+## Overview
 
-The goal of this project is to build a machine learning model capable of estimating house sale prices from features such as:
+The goal of this project is to estimate house prices based on features such as:
 
-- Overall house quality
-- Living area
-- Year built
+- Overall material and finish quality
+- Above-ground living area
+- Construction year
 - Basement area
-- Garage capacity
-- Number of bathrooms
-- Neighborhood
-- Kitchen quality
-- And other property characteristics
+- Garage capacity and area
+- Number of bathrooms and rooms
+- Neighborhood and other property characteristics
 
-The target variable is `SalePrice`.
+The application accepts user inputs and returns an estimated house price using a trained machine learning model.
 
----
+## Dataset
 
-## 📊 Dataset
+The project uses the Ames Housing dataset associated with the Kaggle House Prices competition.
 
-The project uses the Ames Housing dataset from the Kaggle House Prices competition.
+The training dataset contains 1,460 observations and the original dataset includes 79 input features after excluding the `Id` column.
 
-The training dataset contains:
+The target variable is 'SalePrice'.
 
-- 1,460 houses
-- 79 explanatory features
-- Numerical and categorical variables
-
-The target variable is:
-
-```text
-SalePrice
-```
-
-The target was transformed using:
-
-```python
-np.log1p(SalePrice)
-```
-
-because the competition evaluates predictions using logarithmic RMSE.
-
----
-
-## 🔎 Machine Learning Workflow
+## Machine Learning Workflow
 
 ### 1. Exploratory Data Analysis
 
-The dataset was analyzed to understand:
+- Examined dataset dimensions, data types, and missing values.
+- Investigated numerical relationships with the target variable.
+- Identified influential features, including overall quality, living area, and garage capacity.
+- Examined the distribution of house prices.
 
-- Feature distributions
-- Missing values
-- Correlations with house prices
-- Numerical and categorical features
-- Relationships between important house characteristics and `SalePrice`
+### 2. Data Preprocessing
 
-`OverallQual` showed one of the strongest relationships with `SalePrice`.
+The preprocessing pipeline handles numerical and categorical variables separately.
 
-### 2. Missing Value Handling
+**Numerical features**
+- Missing-value imputation using the median.
+- Standardization using `StandardScaler`.
 
-Missing values were handled differently depending on the feature type.
+**Categorical features**
+- Missing-value imputation using the most frequent value.
+- One-hot encoding using `OneHotEncoder(handle_unknown="ignore")`.
 
-Numerical features:
+Preprocessing is fitted on training data within the machine learning pipeline to avoid leaking validation information into the training process.
 
-```text
-Median imputation
-```
+### 3. Feature Engineering
 
-Categorical features:
+Six additional features were created to represent useful combinations and age-related properties:
 
-```text
-Most-frequent imputation
-```
+| Feature | Description |
+|---|---|
+| `TotalSF` | Combined basement, first-floor, and second-floor area |
+| `TotalBathrooms` | Total bathrooms, counting half-bathrooms as 0.5 |
+| `TotalPorchSF` | Combined porch and deck area |
+| `HouseAge` | Year sold minus year built |
+| `RemodAge` | Year sold minus year remodeled |
+| `TotalBsmtFinSF` | Combined finished basement areas |
 
-Some missing values in the original dataset represent the absence of a feature, such as no garage, basement, fence, or swimming pool.
+These features provide the model with additional information about property size, layout, and age.
 
-### 3. Feature Preprocessing
+### 4. Model Training and Selection
 
-A Scikit-learn `ColumnTransformer` was used to process numerical and categorical features separately.
+Several regression models were evaluated:
 
-Numerical pipeline:
+- Linear Regression
+- Random Forest Regressor
+- Tuned Random Forest Regressor
+- Gradient Boosting Regressor
+- Gradient Boosting with engineered features
 
-```text
-Median Imputation
-        ↓
-Standard Scaling
-```
+Five-fold cross-validation was used to compare model performance.
 
-Categorical pipeline:
+The target was transformed using `log1p(SalePrice)` during training. Predictions are transformed back into the original price scale using `expm1()`.
 
-```text
-Most-Frequent Imputation
-        ↓
-One-Hot Encoding
-```
+### 5. Evaluation
 
-The complete preprocessing pipeline was combined with the machine learning model.
+The primary comparison metric is Root Mean Squared Error on the log-transformed target (Log RMSE).
 
----
-
-## 🤖 Models Tested
-
-Several regression approaches were compared:
-
-| Model | 5-Fold CV Log RMSE |
+| Model | Mean 5-Fold CV Log RMSE |
 |---|---:|
 | Linear Regression | 0.1693 |
 | Random Forest | 0.1443 |
 | Tuned Random Forest | 0.1404 |
-| Gradient Boosting | **0.1302** |
-| Tuned Gradient Boosting | 0.1317 |
+| Gradient Boosting | 0.1302 |
+| Gradient Boosting with Feature Engineering | **0.1279** |
 
-Lower RMSE is better.
+Lower Log RMSE indicates better performance.
 
-The original Gradient Boosting model performed best during cross-validation.
+The feature-engineered Gradient Boosting model achieved a mean cross-validation Log RMSE of approximately **0.1279**, compared with approximately 0.1302 for the earlier Gradient Boosting model.
 
-An important observation was that hyperparameter tuning did not automatically improve every model. The tuned Gradient Boosting model performed slightly worse than the original configuration.
+These results are cross-validation results, not a guarantee of prediction accuracy for every individual house.
 
----
+### 6. Web Application
 
-## 🏆 Final Model
+The Streamlit application allows users to enter selected house characteristics and receive a predicted sale price.
 
-The final model is:
+The application uses the same feature-engineering logic as the training workflow to ensure that the model receives the expected input features.
 
-```text
-GradientBoostingRegressor
-```
-
-with:
-
-```text
-n_estimators = 300
-learning_rate = 0.05
-max_depth = 3
-random_state = 42
-```
-
-The model achieved approximately:
-
-```text
-5-Fold CV Log RMSE: 0.1302
-```
-
-The complete Scikit-learn pipeline, including preprocessing and the trained model, is saved using Joblib.
-
----
-
-## 🌐 Streamlit Application
-
-The project includes an interactive Streamlit application where users can enter house characteristics and receive an estimated sale price.
-
-The application:
-
-1. Collects user input
-2. Creates a complete feature row
-3. Applies the saved preprocessing pipeline
-4. Predicts the log-transformed price
-5. Converts the prediction back to the original price scale
-6. Displays the estimated sale price
-
-The application is intended as a demonstration of the machine learning model and is **not a professional property valuation tool**.
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```text
 house_price_prediction/
-│
 ├── data/
-│   └── data_description.txt
-│
-├── model/
-│   └── house_price_model.pkl
-│
 ├── notebooks/
 │   └── 01_exploration.ipynb
-│
+├── model/
+│   └── house_price_model.pkl
 ├── src/
-│   └── app.py
-│
-├── .gitignore
+│   ├── app.py
+│   ├── predict.py
+│   └── features.py
 ├── requirements.txt
 └── README.md
 ```
 
----
+## Run Locally
 
-## ⚙️ Running the Project Locally
-
-Clone the repository and enter the project directory:
+### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
-cd house_price_prediction
+git clone https://github.com/piyushs0810/house-price-prediction.git
+cd house-price-prediction
 ```
 
-Create a virtual environment:
+### 2. Create and activate a virtual environment
 
 ```bash
 python3 -m venv venv
-```
-
-Activate it:
-
-```bash
 source venv/bin/activate
 ```
 
-Install dependencies:
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Download the Kaggle dataset and place the required files inside:
-
-```text
-data/
-```
-
-Then launch the application:
+### 4. Run the application
 
 ```bash
 streamlit run src/app.py
 ```
 
----
+The application will open in your browser.
 
-## 🚀 Future Improvements
+Ensure that the trained model and any required application configuration files are available in the expected locations.
 
-Possible improvements include:
+## Technologies Used
 
-- XGBoost / LightGBM comparison
-- More advanced feature engineering
-- Hyperparameter optimization
-- Prediction confidence/uncertainty estimates
-- Better handling of structural missing values
-- More detailed model explainability
-- Improved user input coverage
-- Cloud deployment
+- Python
+- pandas
+- NumPy
+- scikit-learn
+- Streamlit
+- Joblib
+- Matplotlib and Seaborn for exploratory analysis
 
----
+## Limitations
 
-## 🧠 What I Learned
+- The model is trained on the Ames Housing dataset and may not generalize to housing markets in other regions.
+- Predictions are estimates, not professional property valuations.
+- Model performance depends on the quality and representativeness of the training data.
+- Cross-validation results do not guarantee the same performance on unseen real-world properties.
 
-This project helped me understand the complete machine learning workflow rather than only training a model:
+## Future Improvements
 
-- Exploratory Data Analysis
-- Missing-value handling
-- Feature preprocessing
-- Numerical and categorical pipelines
-- One-hot encoding
-- Data leakage
-- Train/test splitting
-- Cross-validation
-- Hyperparameter tuning
-- Model comparison
-- Log-transformed targets
-- Model serialization with Joblib
-- Building an ML application with Streamlit
-- Structuring an ML project for deployment
+- Add more detailed model diagnostics.
+- Improve input validation and user experience.
+- Evaluate additional regression algorithms.
+- Investigate prediction intervals and uncertainty estimates.
+- Expand the application with clearer explanations of the factors influencing predictions.
+  
+## Screenshots
 
+### Prediction Interface
+![Prediction Interface](screenshots/app.png)
 
+### Example Prediction
+![Example Prediction](screenshots/prediction.png)
+
+## Author
+
+**Piyush Shrivastava**
+
+GitHub: [piyushs0810](https://github.com/piyushs0810)
